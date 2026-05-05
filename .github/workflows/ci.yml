@@ -36,23 +36,31 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Generate SBOM for this repo
+      - name: Clone seebom as realistic test target
+        run: git clone --depth 1 https://github.com/seebom-labs/seebom.git /tmp/seebom
+
+      - name: Generate SBOM for Go project (seebom backend)
         uses: ./
         id: sbom
         with:
-          path: '.'
+          path: '/tmp/seebom/backend'
           format: 'cyclonedx-json'
           output-file: 'test-sbom.json'
           upload-artifact: 'false'
 
-      - name: Verify SBOM was generated
+      - name: Verify SBOM was generated with components
         run: |
           if [[ ! -f "test-sbom.json" ]]; then
             echo "::error::SBOM file not found"
             exit 1
           fi
           echo "SBOM generated at: ${{ steps.sbom.outputs.sbom-path }}"
-          head -20 test-sbom.json
+          COMPONENTS=$(python3 -c "import json; print(len(json.load(open('test-sbom.json'))['components']))")
+          echo "Components found: ${COMPONENTS}"
+          if [[ "${COMPONENTS}" -lt 1 ]]; then
+            echo "::error::No components found in SBOM — expected Go dependencies"
+            exit 1
+          fi
 
   integration-test-image:
     name: "Integration Test: Container Image Scan"
@@ -60,14 +68,12 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Pull test image
-        run: docker pull alpine:3.19
-
       - name: Generate SBOM for container image
         uses: ./
         id: sbom
         with:
-          image: 'alpine:3.19'
+          image: 'gcr.io/distroless/static-debian12:latest'
+          image-src: 'remote'
           format: 'cyclonedx-json'
           output-file: 'image-sbom.json'
           upload-artifact: 'false'
@@ -79,6 +85,12 @@ jobs:
             exit 1
           fi
           echo "SBOM generated at: ${{ steps.sbom.outputs.sbom-path }}"
-          head -20 image-sbom.json
+          COMPONENTS=$(python3 -c "import json; print(len(json.load(open('image-sbom.json'))['components']))")
+          echo "Components found: ${COMPONENTS}"
+          if [[ "${COMPONENTS}" -lt 1 ]]; then
+            echo "::error::No components found in image SBOM"
+            exit 1
+          fi
+
 
 

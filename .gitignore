@@ -1,0 +1,13 @@
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+*.sbom.json
+test-sbom.json
+image-sbom.json
+

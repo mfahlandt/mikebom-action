@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # v2.0.0
+        with:
+          scandir: './scripts'
+
+  actionlint:
+    name: Action Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Run actionlint
+        uses: rhysd/actionlint-action@35753b0e570d3a0f516e0b8bcd53094e4474e9c1 # v1.1.1
+
+  integration-test-path:
+    name: "Integration Test: Directory Scan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Generate SBOM for this repo
+        uses: ./
+        id: sbom
+        with:
+          path: '.'
+          format: 'cyclonedx-json'
+          output-file: 'test-sbom.json'
+          upload-artifact: 'false'
+
+      - name: Verify SBOM was generated
+        run: |
+          if [[ ! -f "test-sbom.json" ]]; then
+            echo "::error::SBOM file not found"
+            exit 1
+          fi
+          echo "SBOM generated at: ${{ steps.sbom.outputs.sbom-path }}"
+          head -20 test-sbom.json
+
+  integration-test-image:
+    name: "Integration Test: Container Image Scan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Pull test image
+        run: docker pull alpine:3.19
+
+      - name: Generate SBOM for container image
+        uses: ./
+        id: sbom
+        with:
+          image: 'alpine:3.19'
+          format: 'cyclonedx-json'
+          output-file: 'image-sbom.json'
+          upload-artifact: 'false'
+
+      - name: Verify SBOM was generated
+        run: |
+          if [[ ! -f "image-sbom.json" ]]; then
+            echo "::error::SBOM file not found"
+            exit 1
+          fi
+          echo "SBOM generated at: ${{ steps.sbom.outputs.sbom-path }}"
+          head -20 image-sbom.json
+

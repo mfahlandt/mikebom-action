@@ -1,0 +1,80 @@
+name: 'mikebom SBOM Action'
+description: 'Generate Software Bill of Materials (SBOM) using mikebom — supports CycloneDX 1.6, SPDX 2.3, and SPDX 3.0.1'
+author: 'mfahlandt'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'Directory path to scan for SBOM generation (mutually exclusive with image)'
+    required: false
+    default: ''
+  image:
+    description: 'Container image reference or tarball to scan (mutually exclusive with path)'
+    required: false
+    default: ''
+  format:
+    description: 'Output format: cyclonedx-json, spdx-2.3-json, spdx-3.0.1-json'
+    required: false
+    default: 'cyclonedx-json'
+  output-file:
+    description: 'Output file path for the generated SBOM'
+    required: false
+    default: 'sbom.json'
+  upload-artifact:
+    description: 'Whether to upload the SBOM as a workflow artifact'
+    required: false
+    default: 'true'
+  artifact-name:
+    description: 'Name of the uploaded artifact'
+    required: false
+    default: 'sbom'
+  mikebom-version:
+    description: 'Version of mikebom to use (e.g. v0.1.0-alpha.14). Defaults to latest.'
+    required: false
+    default: 'v0.1.0-alpha.14'
+  include-dev:
+    description: 'Include dev/test/optional dependencies'
+    required: false
+    default: 'false'
+  offline:
+    description: 'Disable all outbound network calls for enrichment'
+    required: false
+    default: 'false'
+  image-src:
+    description: 'Image source resolution order (docker, remote, or docker,remote)'
+    required: false
+    default: ''
+
+outputs:
+  sbom-path:
+    description: 'Absolute path to the generated SBOM file'
+    value: ${{ steps.run-mikebom.outputs.sbom-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download and run mikebom
+      id: run-mikebom
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_IMAGE: ${{ inputs.image }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_OUTPUT_FILE: ${{ inputs.output-file }}
+        INPUT_MIKEBOM_VERSION: ${{ inputs.mikebom-version }}
+        INPUT_INCLUDE_DEV: ${{ inputs.include-dev }}
+        INPUT_OFFLINE: ${{ inputs.offline }}
+        INPUT_IMAGE_SRC: ${{ inputs.image-src }}
+      run: ${{ github.action_path }}/scripts/run.sh
+
+    - name: Upload SBOM artifact
+      if: inputs.upload-artifact == 'true'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.run-mikebom.outputs.sbom-path }}
+        if-no-files-found: error
+

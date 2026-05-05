@@ -75,7 +75,8 @@ fi
 
 echo "Extracting..."
 tar -xzf "${BINARY_NAME}.tar.gz"
-chmod +x mikebom
+chmod +x "${BINARY_NAME}/mikebom"
+mv "${BINARY_NAME}/mikebom" ./mikebom
 cd - >/dev/null
 
 MIKEBOM="${INSTALL_DIR}/mikebom"
@@ -125,4 +126,5 @@ SBOM_ABSOLUTE_PATH="$(realpath "${OUTPUT_FILE}")"
 echo "sbom-path=${SBOM_ABSOLUTE_PATH}" >> "${GITHUB_OUTPUT}"
 
 echo "::notice::SBOM generated successfully at ${SBOM_ABSOLUTE_PATH}"
+
 

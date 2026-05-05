@@ -25,8 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Run actionlint
-        uses: rhysd/actionlint-action@35753b0e570d3a0f516e0b8bcd53094e4474e9c1 # v1.1.1
+      - name: Install and run actionlint
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint
 
   integration-test-path:
     name: "Integration Test: Directory Scan"
@@ -78,4 +80,5 @@ jobs:
           fi
           echo "SBOM generated at: ${{ steps.sbom.outputs.sbom-path }}"
           head -20 image-sbom.json
+
 

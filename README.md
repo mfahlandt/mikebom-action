@@ -13,6 +13,7 @@ SHA-256 hashes, real dependency graphs, and evidence blocks.
 
 - 🔍 **Source tree scanning** — scan any directory for dependencies
 - 🐳 **Container image scanning** — scan OCI images (local docker or remote registry)
+- 🏗️ **Monorepo support** — recursively detects all ecosystems (Go, npm, Cargo, Maven, etc.)
 - 📦 **Multiple formats** — CycloneDX JSON, SPDX 2.3 JSON, SPDX 3.0.1 JSON
 - ✅ **Checksum verification** — mikebom binary integrity verified via SHA256
 - 📤 **Artifact upload** — automatically upload SBOM as workflow artifact
@@ -98,6 +99,19 @@ jobs:
     mikebom-version: 'v0.1.0-alpha.14'
 ```
 
+### Scan a monorepo (multiple ecosystems)
+
+mikebom automatically detects all ecosystems when scanning from the repo root.
+For example, a project with a Go backend and an Angular frontend produces a
+single unified SBOM covering both:
+
+```yaml
+- uses: mfahlandt/mikebom-action@v0
+  with:
+    path: '.'
+    output-file: 'full-project-sbom.json'
+```
+
 ## Inputs
 
 | Input | Description | Default |
@@ -157,6 +171,12 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting instructions.
 - **Strict PURL encoding** across all ecosystems
 - **Compiled binary identity** (ELF, Mach-O, PE)
 - **Lockfile-aware** scanning (Cargo.lock, go.sum, package-lock.json, etc.)
+
+### Supported Ecosystems
+
+Go, npm, Cargo (Rust), Maven (Java), pip (Python), dpkg (Debian/Ubuntu),
+apk (Alpine), RPM (RHEL/Fedora), and compiled binary analysis for
+statically-linked libraries (OpenSSL, zlib, curl, SQLite, etc.).
 
 ## Contributing
 
